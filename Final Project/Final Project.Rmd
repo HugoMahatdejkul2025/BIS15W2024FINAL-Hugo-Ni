@@ -1,0 +1,104 @@
+---
+title: "Final Project"
+author: "Ni, Hugo"
+date: "2024-02-29"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 0. Libaries
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(shiny)
+library(shinydashboard)
+library(naniar)
+library(janitor)
+library(ggplot2)
+```
+
+# 1. Import the data
+```{r}
+broomrape <- read.csv("Table_2_Association%20mapping%20for%20broomrape%20resistance%20in%20sunflower.csv")
+```
+
+```{r}
+#accession:Type of sunflower
+#source: origin
+#broomrape type_year. 2 per broomrape type measured in different year
+```
+# 2. Checks for NAs
+```{r}
+miss_var_summary(broomrape)
+```
+
+# 3.Clean the data column names
+```{r}
+broomrape<-
+  clean_names((broomrape))
+```
+
+## remove unecessary columns
+```{r}
+broomrape <-
+  broomrape %>%
+  select(!confectionery)
+```
+
+## pivot data longer
+```{r}
+broomrape_long <- broomrape %>%
+  pivot_longer(cols = c(3:8), names_to = "broomrape", values_to = "counts")
+```
+
+## separate broomrape type and year
+```{r}
+broomrape_sep<-
+  broomrape_long %>%
+  separate(broomrape, into=c("broomrape_name","year"),sep="_")
+```
+
+# 4. Find out which broomrape type is most parasitic
+```{r}
+broomrape_sep %>%
+  group_by(broomrape_name) %>%
+  summarise(average_count = mean(counts, na.rm = T))
+```
+## Plot construction
+```{r}
+broomrape_sep %>%
+  group_by(broomrape_name) %>%
+  summarise(average_count = mean(counts, na.rm = T)) %>%
+  ggplot(aes(x=broomrape_name, y=average_count))+
+  geom_col()+
+  labs(title = "Average Attachment for Each Broomrape Type",
+    x="Broomrape Names",
+    y="Broomrape Counts")
+```
+
+# 5. Find out which host plant is most resistant
+```{r}
+broomrape_sep %>%
+  group_by(accession) %>%
+  summarise(ave_attachment = mean(counts, na.rm = T)) %>%
+  arrange(ave_attachment)
+```
+## constructing plot
+```{r}
+broomrape_sep %>%
+  group_by(accession) %>%
+  summarise(ave_attachment = mean(counts, na.rm = T)) %>%
+  arrange(ave_attachment) %>%
+  top_n(-5) %>%
+  ggplot(aes(x=accession , y=ave_attachment))+
+  geom_col()+
+  coord_flip()+
+  labs(title = "Average Attachment in Different Sunflower",
+    x="Sunflower Accession",
+    y="Broomrape Counts")
+```
+
