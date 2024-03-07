@@ -2,9 +2,8 @@
 title: "Final Project"
 author: "Ni, Hugo"
 date: "2024-02-29"
-output: 
-  html_document: 
-    keep_md: yes
+output: html_notebook
+runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -30,6 +29,7 @@ broomrape <- read.csv("Table_2_Association%20mapping%20for%20broomrape%20resista
 #accession:Type of sunflower
 #source: origin
 #broomrape type_year. 2 per broomrape type measured in different year
+#count: avg number of broomrapes on it.
 ```
 # 2. Checks for NAs
 ```{r}
@@ -101,4 +101,58 @@ broomrape_sep %>%
     x="Sunflower Accession",
     y="Broomrape Counts")
 ```
+# Looking at the distinct accessions in the data
+```{r}
+distinct(broomrape_long,accession)
+```
+# Shiny app. Our data was super diverse in terms of the number of different plants that had broomrapes on them. We want to compare the counts of different broomrapes based on what plant they were on.
+```{r}
+ui <- fluidPage(
+  titlePanel("Broomrape Data Visualization"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("source", "Origin of host plant (where the host plant was collected from):",
+                  choices = unique(broomrape_sep$source)),
+      selectInput("accessions", "Select Accessions (Plant that hosted the broomrape):",
+                  choices = NULL, multiple = TRUE)
+    ),
+    mainPanel(
+      plotOutput("plot")
+    )
+  )
+)
+
+
+server <- function(input, output, session) {
+  
+  
+  observe({
+    updateSelectInput(inputId = "accessions",
+                      choices = unique(broomrape_sep$accession[broomrape_sep$source == input$source]))
+  })
+  
+ 
+  filtered_data <- reactive({
+    broomrape_sep %>%
+      filter(source == input$source) %>%
+      filter(accession %in% input$accessions)
+  })
+  
+  
+  output$plot <- renderPlot({
+    ggplot(filtered_data(), aes(x = accession, y = counts, fill = factor(year))) +
+      geom_point(shape = 21, size = 4, position = position_dodge(width = 0.5)) +
+      labs(title = paste("Counts for", input$source),
+           x = "Host Plant", y = "Count of Broomrapes (on Avg)") +
+      scale_fill_discrete(name = "Year") +  
+      theme_bw() 
+  })
+}
+
+
+shinyApp(ui = ui, server = server)
+```
+
+
+
 

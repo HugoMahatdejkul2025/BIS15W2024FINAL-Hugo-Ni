@@ -31,6 +31,7 @@ broomrape <- read.csv("Table_2_Association%20mapping%20for%20broomrape%20resista
 #accession:Type of sunflower
 #source: origin
 #broomrape type_year. 2 per broomrape type measured in different year
+#count: avg number of broomrapes on it.
 ```
 # 2. Checks for NAs
 
@@ -160,4 +161,81 @@ broomrape_sep %>%
 ```
 
 ![](Final-Project_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+# Looking at the distinct accessions in the data
+
+```r
+distinct(broomrape_long,accession)
+```
+
+```
+## # A tibble: 104 × 1
+##    accession
+##    <chr>    
+##  1 BP       
+##  2 ADV      
+##  3 97A7     
+##  4 CT       
+##  5 OJQ      
+##  6 SAB      
+##  7 92A6     
+##  8 2603RM   
+##  9 2603     
+## 10 OV       
+## # ℹ 94 more rows
+```
+# Shiny app. Our data was super diverse in terms of the number of different plants that had broomrapes on them. We want to compare the counts of different broomrapes based on what plant they were on.
+
+```r
+ui <- fluidPage(
+  titlePanel("Broomrape Data Visualization"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("source", "Select site of experiment:",
+                  choices = unique(broomrape_sep$source)),
+      selectInput("accessions", "Select Accessions (Plant that hosted the broomrape):",
+                  choices = NULL, multiple = TRUE)
+    ),
+    mainPanel(
+      plotOutput("plot")
+    )
+  )
+)
+
+# Define server logic
+server <- function(input, output, session) {
+  
+  # Update choices for accessions based on selected source
+  observe({
+    updateSelectInput(inputId = "accessions",
+                      choices = unique(broomrape_sep$accession[broomrape_sep$source == input$source]))
+  })
+  
+  # Filter data based on user input
+  filtered_data <- reactive({
+    broomrape_sep %>%
+      filter(source == input$source) %>%
+      filter(accession %in% input$accessions)
+  })
+  
+  # Render scatter plot
+  output$plot <- renderPlot({
+    ggplot(filtered_data(), aes(x = accession, y = counts, fill = factor(year))) +
+      geom_point(shape = 21, size = 4, position = position_dodge(width = 0.5)) +
+      labs(title = paste("Counts for", input$source),
+           x = "Host Plant", y = "Count of Broomrapes (on Avg)") +
+      scale_fill_discrete(name = "Year") +  # Set legend title
+      theme_bw() # Use a white background theme
+  })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
+```
+
+```{=html}
+<div style="width: 100% ; height: 400px ; text-align: center; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box;" class="muted well">Shiny applications not supported in static R Markdown documents</div>
+```
+
+
+
 
