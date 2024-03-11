@@ -142,7 +142,7 @@ server <- function(input, output, session) {
   output$plot <- renderPlot({
     ggplot(filtered_data(), aes(x = accession, y = counts, fill = factor(year))) +
       geom_point(shape = 21, size = 4, position = position_dodge(width = 0.5)) +
-      labs(title = paste("Counts for", input$source),
+      labs(title = "Broomrape Counts on Different Host Plants",
            x = "Host Plant", y = "Count of Broomrapes (on Avg)") +
       scale_fill_discrete(name = "Year") +  
       theme_bw() 
